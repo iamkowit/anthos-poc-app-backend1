@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package calculator;
+
+service CalculatorService {
+  rpc Fibonacci (FibonacciReq) returns (FibonacciRes) {}
+  rpc FibonacciFaster (FibonacciReq) returns (FibonacciRes) {}
+  rpc FibonacciFastest (FibonacciReq) returns (FibonacciRes) {}
+}
+
+message FibonacciReq {
+  int32 order = 1;
+}
+
+message FibonacciRes {
+  int32 number = 1;
+}

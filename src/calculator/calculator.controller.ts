@@ -11,12 +11,16 @@ export class CalculatorController {
   }
 
   @Get('fibo/faster/:order')
-  getFibonacciFaster(@Param('order', ParseIntPipe) order: number): Promise<number> {
+  getFibonacciFaster(
+    @Param('order', ParseIntPipe) order: number,
+  ): Promise<number> {
     return this.calculatorService.fibonacciFaster(order);
   }
 
   @Get('fibo/fastest/:order')
-  getFibonacciFastest(@Param('order', ParseIntPipe) order: number): Promise<number> {
+  getFibonacciFastest(
+    @Param('order', ParseIntPipe) order: number,
+  ): Promise<number> {
     return this.calculatorService.fibonacciFastest(order);
   }
 }

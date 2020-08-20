@@ -35,16 +35,39 @@ jobs:
         id: get_version
         run: echo ::set-output name=VERSION::${GITHUB_REF#refs/tags/}
 
+      - name: Login to GitHub docker registry
+        run: |
+          GITHUB_REPOSITORY_OWNER=$(echo ${GITHUB_REPOSITORY%/*} | tr '[:upper:]' '[:lower:]')
+          echo ${{ github.token }} | docker login https://docker.pkg.github.com -u $GITHUB_REPOSITORY_OWNER --password-stdin
+
+      - name: Pull image cache
+        id: image_cache
+        run: |
+          GITHUB_REPOSITORY_LOWERCASE=$(echo ${GITHUB_REPOSITORY} | tr '[:upper:]' '[:lower:]')
+          CACHE_IMAGE_URI=docker.pkg.github.com/$GITHUB_REPOSITORY_LOWERCASE/builder
+          docker pull $CACHE_IMAGE_URI || true
+          echo "::set-output name=CACHE_IMAGE_URI::$CACHE_IMAGE_URI"
+
       - name: Build, tag, and push image to Amazon ECR
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ env.IMAGE_REPOSITORY }}
           IMAGE_TAG: ${{ steps.get_version.outputs.VERSION }}
+          CACHE_IMAGE_URI: ${{ steps.image_cache.outputs.CACHE_IMAGE_URI }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker build -t builder --cache-from=$CACHE_IMAGE_URI --target builder .
+          docker build -t thing --cache-from=builder .
+          docker tag thing $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=IMAGE_REPOSITORY::$ECR_REPOSITORY:$IMAGE_TAG"
+
+      - name: Push image cache
+        env:
+          CACHE_IMAGE_URI: ${{ steps.image_cache.outputs.CACHE_IMAGE_URI }}
+        run: |
+          docker tag builder $CACHE_IMAGE_URI
+          docker push $CACHE_IMAGE_URI
 
   deploy-mr:
     name: Create MR for deployment

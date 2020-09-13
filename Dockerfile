@@ -1,4 +1,4 @@
-FROM node:10.22.0 as builder
+FROM node:latest as builder
 WORKDIR /app
 
 # Install dependencies
